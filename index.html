@@ -669,25 +669,36 @@ function renderRoster(){
   const el=document.getElementById('roster-list');
   const isAdmin=currentUser?.role==='admin';
   if(!db.students.length){el.innerHTML='<p style="font-size:13px;color:var(--faint);">受講生がいません</p>';return;}
-  el.innerHTML='';
-  db.students.forEach((s,i)=>{
-    const row=document.createElement('div');row.className='r-row';
-    const clsList=(s.classes||[s.cls]).map(c=>`<span class="r-cls">${c}</span>`).join('');
-    row.innerHTML=`
-      <span class="r-num">${s.num||'—'}</span>
-      <span style="flex:1;font-size:13px;font-weight:500;">${s.name}</span>
-      <span class="r-co">${s.company||''}</span>
-      <div style="width:100%;display:flex;gap:4px;flex-wrap:wrap;margin-top:2px;">${clsList}${s.examYear?`<span class="tag tag-co">受験${s.examYear}年</span>`:''}</div>`;
-    if(isAdmin){
-      const acts=document.createElement('div');acts.className='r-actions';
-      const editBtn=document.createElement('button');editBtn.className='btn btn-sm btn-edit';editBtn.textContent='編集';
-      editBtn.onclick=()=>openStudentModal(i);
-      const delBtn=document.createElement('button');delBtn.className='btn btn-sm btn-del';delBtn.textContent='削除';
-      delBtn.onclick=()=>removeStudent(i);
-      acts.append(editBtn,delBtn);row.append(acts);
-    }
-    el.appendChild(row);
-  });
+  // テーブル形式で表示
+  el.innerHTML=`
+    <table style="width:100%;border-collapse:collapse;font-size:13px;">
+      <thead>
+        <tr style="border-bottom:2px solid var(--border);">
+          <th style="padding:8px 6px;text-align:left;color:var(--faint);font-size:11px;font-weight:500;white-space:nowrap;">番号</th>
+          <th style="padding:8px 6px;text-align:left;color:var(--faint);font-size:11px;font-weight:500;">氏名</th>
+          <th style="padding:8px 6px;text-align:left;color:var(--faint);font-size:11px;font-weight:500;">企業</th>
+          <th style="padding:8px 6px;text-align:left;color:var(--faint);font-size:11px;font-weight:500;">受講授業</th>
+          <th style="padding:8px 6px;text-align:left;color:var(--faint);font-size:11px;font-weight:500;white-space:nowrap;">受験年</th>
+          ${isAdmin?'<th style="padding:8px 6px;"></th>':''}
+        </tr>
+      </thead>
+      <tbody>
+        ${db.students.map((s,i)=>{
+          const clsList=(s.classes||[s.cls]).map(c=>`<span class="r-cls">${c}</span>`).join(' ');
+          return `<tr style="border-bottom:1px solid var(--border);">
+            <td style="padding:10px 6px;color:var(--faint);font-family:'DM Mono',monospace;font-size:12px;white-space:nowrap;">${s.num||'—'}</td>
+            <td style="padding:10px 6px;font-weight:500;white-space:nowrap;">${s.name}</td>
+            <td style="padding:10px 6px;color:var(--muted);font-size:12px;white-space:nowrap;">${s.company||'—'}</td>
+            <td style="padding:10px 6px;">${clsList}</td>
+            <td style="padding:10px 6px;color:var(--muted);font-size:12px;white-space:nowrap;">${s.examYear||'—'}</td>
+            ${isAdmin?`<td style="padding:10px 6px;white-space:nowrap;">
+              <button class="btn btn-sm btn-edit" onclick="openStudentModal(${i})" style="margin-right:4px;">編集</button>
+              <button class="btn btn-sm btn-del" onclick="removeStudent(${i})">削除</button>
+            </td>`:''}
+          </tr>`;
+        }).join('')}
+      </tbody>
+    </table>`;
 }
 
 // ── 授業管理 ─────────────────────────────────────────────────
