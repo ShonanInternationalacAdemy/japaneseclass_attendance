@@ -502,7 +502,23 @@ async function loadAll(){
   try{
     const d=await apiFetch('getAll');
     if(d.error) throw new Error(d.error);
-    db.students=d.students||[];
+    // studentsのclassesをパース（スプレッドシートからはJSON文字列で来る）
+    db.students=(d.students||[]).map(s=>{
+      let classes=s.classes;
+      // classesJsonがある場合はパース
+      if(s.classesJson && typeof s.classesJson==='string'){
+        try{ classes=JSON.parse(s.classesJson); }catch(e){ classes=s.cls?[s.cls]:[]; }
+      }
+      // classesが文字列配列でない場合の対応
+      if(!Array.isArray(classes)){
+        if(typeof classes==='string' && classes.startsWith('[')){
+          try{ classes=JSON.parse(classes); }catch(e){ classes=s.cls?[s.cls]:[]; }
+        }else{
+          classes=s.cls?[s.cls]:[];
+        }
+      }
+      return {...s, classes};
+    });
     db.classes=(d.classes||[]).map(r=>r.name).filter(Boolean);
     db.companies=(d.companies||[]).map(r=>r.name).filter(Boolean);
     db.memos=d.memos||[];
@@ -726,7 +742,7 @@ function renderRoster(){
       </thead>
       <tbody>
         ${db.students.map((s,i)=>{
-          const clsList=(s.classes||[s.cls]).map(c=>`<span class="r-cls">${c}</span>`).join(' ');
+          const clsList=(Array.isArray(s.classes)?s.classes:(s.cls?[s.cls]:[])).map(c=>`<span class="r-cls">${c}</span>`).join(' ');
           return `<tr style="border-bottom:1px solid var(--border);">
             <td style="padding:10px 6px;color:var(--faint);font-family:'DM Mono',monospace;font-size:12px;white-space:nowrap;">${s.num||'—'}</td>
             <td style="padding:10px 6px;font-weight:500;white-space:nowrap;">${s.name}</td>
