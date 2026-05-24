@@ -216,6 +216,7 @@ textarea{resize:vertical;min-height:90px;line-height:1.6;}
       </select>
     </div>
     <div class="row"><span class="lbl">介護福祉士受験年</span><input type="text" id="s-exam-year" placeholder="例: 2026"></div>
+    <div class="row"><span class="lbl">日本語レベル</span><input type="text" id="s-jlpt" placeholder="例: N4・初級など"></div>
     <div class="row">
       <span class="lbl">受講授業</span>
       <div class="check-list" id="s-classes-check"></div>
@@ -406,7 +407,7 @@ textarea{resize:vertical;min-height:90px;line-height:1.6;}
 </div>
 
 <script>
-const SCRIPT_URL='https://script.google.com/macros/s/AKfycbxtTrSpQTnIp4Urtx61EfLp0Cz8aZC2rA69Eoa2a7XprsvEmU-qCmXuaxpf-a4c7yNv/exec';
+const SCRIPT_URL='https://script.google.com/macros/s/AKfycbzaD-tDVUEN7_B8pTWHIV2xbtYxpQdb4wHLZ1Y4UnyVq-CT9QGtCoXCbsqBJQVFNbPD/exec';
 let currentUser=null;
 let loginRole='admin';
 
@@ -677,6 +678,7 @@ function openStudentModal(idx){
     document.getElementById('s-name-input').value=s.name||'';
     compSel.value=s.company||'';
     document.getElementById('s-exam-year').value=s.examYear||'';
+    document.getElementById('s-jlpt').value=s.jlpt||'';
     const clsList=s.classes||(s.cls?[s.cls]:[]);
     checkArea.querySelectorAll('.s-cls-chk').forEach(cb=>{
       if(clsList.includes(cb.value)) cb.checked=true;
@@ -688,6 +690,7 @@ function openStudentModal(idx){
     document.getElementById('s-name-input').value='';
     compSel.value='';
     document.getElementById('s-exam-year').value='';
+    document.getElementById('s-jlpt').value='';
   }
   modal.classList.add('open');
 }
@@ -700,10 +703,11 @@ async function saveStudent(){
   const name=document.getElementById('s-name-input').value.trim();
   const company=document.getElementById('s-company-sel').value;
   const examYear=document.getElementById('s-exam-year').value.trim();
+  const jlpt=document.getElementById('s-jlpt').value.trim();
   const classes=[...document.querySelectorAll('.s-cls-chk:checked')].map(cb=>cb.value);
   if(!name){alert('氏名を入力してください');return;}
   if(!classes.length){alert('受講授業を1つ以上選択してください');return;}
-  const studentData={num,name,company,examYear,classes,cls:classes[0]};
+  const studentData={num,name,company,examYear,jlpt,classes,cls:classes[0]};
   if(idx>=0){
     db.students[idx]=studentData;
   }else{
@@ -737,6 +741,7 @@ function renderRoster(){
           <th style="padding:8px 6px;text-align:left;color:var(--faint);font-size:11px;font-weight:500;">企業</th>
           <th style="padding:8px 6px;text-align:left;color:var(--faint);font-size:11px;font-weight:500;">受講授業</th>
           <th style="padding:8px 6px;text-align:left;color:var(--faint);font-size:11px;font-weight:500;white-space:nowrap;">受験年</th>
+          <th style="padding:8px 6px;text-align:left;color:var(--faint);font-size:11px;font-weight:500;white-space:nowrap;">日本語Lv</th>
           ${isAdmin?'<th style="padding:8px 6px;"></th>':''}
         </tr>
       </thead>
@@ -749,6 +754,7 @@ function renderRoster(){
             <td style="padding:10px 6px;color:var(--muted);font-size:12px;white-space:nowrap;">${s.company||'—'}</td>
             <td style="padding:10px 6px;">${clsList}</td>
             <td style="padding:10px 6px;color:var(--muted);font-size:12px;white-space:nowrap;">${s.examYear||'—'}</td>
+            <td style="padding:10px 6px;color:var(--muted);font-size:12px;white-space:nowrap;">${s.jlpt||'—'}</td>
             ${isAdmin?`<td style="padding:10px 6px;white-space:nowrap;">
               <button class="btn btn-sm btn-edit" onclick="openStudentModal(${i})" style="margin-right:4px;">編集</button>
               <button class="btn btn-sm btn-del" onclick="removeStudent(${i})">削除</button>
