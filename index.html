@@ -465,6 +465,21 @@ function startApp(){
   document.getElementById('memo-date').value=today;
   document.getElementById('rp-month').value=today.slice(0,7);
   document.getElementById('xl-month').value=today.slice(0,7);
+  // 講師は出席日付を当日のみに制限
+  const attDateEl=document.getElementById('att-date');
+  if(!isAdmin){
+    attDateEl.max=today;
+    attDateEl.min=today;
+    attDateEl.readOnly=true;
+    attDateEl.style.background='var(--surface2)';
+    attDateEl.style.color='var(--muted)';
+  }else{
+    attDateEl.removeAttribute('max');
+    attDateEl.removeAttribute('min');
+    attDateEl.readOnly=false;
+    attDateEl.style.background='';
+    attDateEl.style.color='';
+  }
   loadAll();
 }
 
@@ -566,25 +581,52 @@ document.getElementById('xl-type').addEventListener('change',function(){
 function renderAtt(){
   const date=document.getElementById('att-date').value;
   const cls=document.getElementById('att-cls').value;
+  const today=new Date().toISOString().split('T')[0];
+  // 講師は当日以外の記録不可
+  const isAdmin=currentUser?.role==='admin';
+  const isLocked=!isAdmin && date !== today;
   const key=date+'_'+cls;
   if(!db.attendance[key]) db.attendance[key]={};
   const el=document.getElementById('att-list');
-  // その授業を受講している生徒のみ表示
   const members=db.students.filter(s=>(s.classes||[s.cls]).includes(cls));
   if(!members.length){el.innerHTML='<p style="font-size:13px;color:var(--faint);">この授業の受講生がいません</p>';return;}
-  el.innerHTML='';
+
+  // ロック中の注意メッセージ
+  let lockMsg='';
+  if(isLocked){
+    lockMsg=`<div style="background:#FAEEDA;color:#854F0B;font-size:13px;padding:10px 12px;border-radius:var(--rs);margin-bottom:12px;">
+      過去の日付の出席記録は管理者のみ変更できます
+    </div>`;
+  }
+
+  el.innerHTML=lockMsg;
   members.forEach(s=>{
     const st=db.attendance[key][s.name]||'none';
-    // 全授業の合計出席回数
     const total=Object.values(db.attendance).reduce((a,r)=>a+(r[s.name]==='present'?1:0),0);
     const esc=s.name.replace(/'/g,"\\'");
     const row=document.createElement('div');row.className='s-row';
-    row.innerHTML=`<div class="s-name">${s.name}<div class="s-sub">${s.company||''} ${s.num?'No.'+s.num:''}</div></div>
-      <button class="a-btn ${st==='present'?'P':''}" onclick="mark('${esc}','present')">○</button>
-      <button class="a-btn ${st==='absent'?'A':''}" onclick="mark('${esc}','absent')">×</button>
-      <span class="cnt">${total}回</span>`;
+    if(isLocked){
+      // ロック中は表示のみ（ボタン無効）
+      row.innerHTML=`<div class="s-name">${s.name}<div class="s-sub">${s.company||''} ${s.num?'No.'+s.num:''}</div></div>
+        <button class="a-btn ${st==='present'?'P':''}" disabled style="opacity:.5;cursor:not-allowed;">○</button>
+        <button class="a-btn ${st==='absent'?'A':''}" disabled style="opacity:.5;cursor:not-allowed;">×</button>
+        <span class="cnt">${total}回</span>`;
+    }else{
+      row.innerHTML=`<div class="s-name">${s.name}<div class="s-sub">${s.company||''} ${s.num?'No.'+s.num:''}</div></div>
+        <button class="a-btn ${st==='present'?'P':''}" onclick="mark('${esc}','present')">○</button>
+        <button class="a-btn ${st==='absent'?'A':''}" onclick="mark('${esc}','absent')">×</button>
+        <span class="cnt">${total}回</span>`;
+    }
     el.appendChild(row);
   });
+
+  // 保存ボタンの表示制御
+  const saveBtn=document.querySelector('#sec-att .btn-p');
+  if(saveBtn){
+    saveBtn.disabled=isLocked;
+    saveBtn.style.opacity=isLocked?'.4':'1';
+    saveBtn.style.cursor=isLocked?'not-allowed':'pointer';
+  }
 }
 function mark(name,st){
   const date=document.getElementById('att-date').value,cls=document.getElementById('att-cls').value;
